@@ -14,6 +14,7 @@ import {
   X,
   List,
   Map,
+  MapPin,
   ExternalLink,
 } from "lucide-react";
 import {
@@ -329,36 +330,107 @@ export default function Home() {
 
       {/* Tab: Harita */}
       {activeTab === "harita" && (
-        <div className="flex-1 flex flex-col" data-testid="tab-panel-harita">
-          {/* Map iframe — fills all remaining space */}
-          <div className="flex-1 relative bg-slate-100">
-            <iframe
-              src={MAP_SHARE_URL}
-              title="GDZ Elektrik Canlı Kesinti Haritası"
-              data-testid="iframe-map"
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="absolute inset-0 w-full h-full border-0"
-            />
-          </div>
+        <div className="flex-1 flex flex-col bg-slate-50" data-testid="tab-panel-harita">
+          <main className="flex-1 px-4 py-6 flex flex-col gap-4 pb-10">
 
-          {/* Footer strip with external link */}
-          <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-border/40 shrink-0">
-            <span className="text-xs text-muted-foreground font-medium">
-              GDZ Elektrik — Resmi Kesinti Haritası
-            </span>
-            <a
-              href={MAP_SHARE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="link-open-map"
-              className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Haritayı Aç
-            </a>
-          </div>
+            {/* Primary CTA card */}
+            <div className="rounded-xl border border-border/50 bg-white shadow-sm overflow-hidden">
+              {/* Map visual header */}
+              <div className="relative bg-gradient-to-br from-primary/90 to-primary flex flex-col items-center justify-center py-10 px-6 text-center gap-3">
+                {/* Grid lines decoration */}
+                <div className="absolute inset-0 opacity-10"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
+                    backgroundSize: "32px 32px",
+                  }}
+                />
+                <div className="relative bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30 shadow-lg">
+                  <Map className="h-10 w-10 text-white" />
+                </div>
+                <div className="relative">
+                  <p className="text-white font-bold text-lg leading-tight">
+                    GDZ Elektrik Canlı Kesinti Haritası
+                  </p>
+                  <p className="text-primary-foreground/75 text-sm mt-1">
+                    Resmi GDZ Elektrik haritası
+                  </p>
+                </div>
+              </div>
+
+              {/* Info + button */}
+              <div className="px-5 py-5 flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Google, harita içeriğinin bu uygulama içinde görüntülenmesini
+                  güvenlik politikaları nedeniyle kısıtlamaktadır. Haritayı
+                  tarayıcınızda tam ekran görüntülemek için aşağıdaki butona tıklayın.
+                </p>
+                <a
+                  href={MAP_SHARE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="link-open-map"
+                  className="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-md hover:bg-primary/90 transition-all active:scale-[0.98]"
+                >
+                  <Map className="h-4 w-4" />
+                  Haritayı Harici Aç
+                  <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                </a>
+              </div>
+            </div>
+
+            {/* District outage summary — useful map alternative */}
+            <div className="rounded-xl border border-border/50 bg-white shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-border/40 flex items-center gap-2.5">
+                <div className="bg-primary/10 p-1.5 rounded-lg">
+                  <MapPin className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold leading-tight">İlçe Bazlı Özet</p>
+                  <p className="text-[11px] text-muted-foreground font-medium">
+                    Aktif ve planlı kesintiler
+                  </p>
+                </div>
+              </div>
+              {!districts || districts.length === 0 ? (
+                <div className="px-4 py-8 flex flex-col items-center gap-2 text-center">
+                  <Skeleton className="h-4 w-2/3 mb-1" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ) : (
+                <ul className="divide-y divide-border/40">
+                  {districts
+                    .filter((d) => d.activeCount + d.plannedCount > 0)
+                    .map((d) => (
+                      <li
+                        key={d.name}
+                        className="flex items-center justify-between px-4 py-3"
+                        data-testid={`district-row-${d.name}`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm font-semibold">{d.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {d.activeCount > 0 && (
+                            <span className="flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                              <Zap className="h-3 w-3" />
+                              {d.activeCount} Aktif
+                            </span>
+                          )}
+                          {d.plannedCount > 0 && (
+                            <span className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                              <AlertTriangle className="h-3 w-3" />
+                              {d.plannedCount} Planlı
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
+          </main>
         </div>
       )}
     </div>
