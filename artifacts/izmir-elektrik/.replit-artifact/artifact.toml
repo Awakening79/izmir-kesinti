@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "İzmir Elektrik Kesinti Takibi"
+version = "1.0.0"
+id = "artifacts/izmir-elektrik"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22083
+
+[services.development]
+run = "pnpm --filter @workspace/izmir-elektrik run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/izmir-elektrik", "run", "build" ]
+publicDir = "artifacts/izmir-elektrik/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22083"
+BASE_PATH = "/"

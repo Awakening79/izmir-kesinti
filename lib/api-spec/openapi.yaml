@@ -1,15 +1,16 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: İzmir Elektrik Kesinti Takibi API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: outages
+    description: Electricity outage operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,85 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /outages:
+    get:
+      operationId: listOutages
+      tags: [outages]
+      summary: List all planned outages
+      description: Returns all planned electricity outages, optionally filtered by district
+      parameters:
+        - name: district
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter outages by district name
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [planned, active, completed]
+          description: Filter outages by status
+      responses:
+        "200":
+          description: List of outages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Outage"
+  /outages/{id}:
+    get:
+      operationId: getOutage
+      tags: [outages]
+      summary: Get a specific outage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Outage details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Outage"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /outages/summary:
+    get:
+      operationId: getOutageSummary
+      tags: [outages]
+      summary: Get outage summary statistics
+      responses:
+        "200":
+          description: Summary statistics per district
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutageSummary"
+  /districts:
+    get:
+      operationId: listDistricts
+      tags: [outages]
+      summary: List all districts with outage counts
+      responses:
+        "200":
+          description: List of districts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/District"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +113,86 @@ components:
           type: string
       required:
         - status
-
+    Outage:
+      type: object
+      required:
+        - id
+        - district
+        - neighborhoods
+        - startTime
+        - endTime
+        - reason
+        - status
+        - affectedCount
+      properties:
+        id:
+          type: integer
+        district:
+          type: string
+          description: İlçe (district name)
+        neighborhoods:
+          type: array
+          items:
+            type: string
+          description: Affected neighborhoods (mahalleler)
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          description: Reason for outage
+        status:
+          type: string
+          enum: [planned, active, completed]
+        affectedCount:
+          type: integer
+          description: Estimated number of affected subscribers
+        note:
+          type: ["string", "null"]
+    District:
+      type: object
+      required:
+        - name
+        - activeCount
+        - plannedCount
+        - completedCount
+      properties:
+        name:
+          type: string
+        activeCount:
+          type: integer
+        plannedCount:
+          type: integer
+        completedCount:
+          type: integer
+    OutageSummary:
+      type: object
+      required:
+        - totalActive
+        - totalPlanned
+        - totalCompleted
+        - totalAffected
+        - byDistrict
+      properties:
+        totalActive:
+          type: integer
+        totalPlanned:
+          type: integer
+        totalCompleted:
+          type: integer
+        totalAffected:
+          type: integer
+        byDistrict:
+          type: array
+          items:
+            $ref: "#/components/schemas/District"
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
