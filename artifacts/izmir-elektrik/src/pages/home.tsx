@@ -1,29 +1,86 @@
-import { useState } from "react";
-import { 
-  useListOutages, 
-  useGetOutageSummary, 
-  useListDistricts, 
-  getListOutagesQueryKey 
+import { useState, useMemo } from "react";
+import {
+  useListOutages,
+  useGetOutageSummary,
+  useListDistricts,
+  getListOutagesQueryKey,
 } from "@workspace/api-client-react";
-import { Zap, AlertTriangle, CheckCircle2, Search } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Zap,
+  AlertTriangle,
+  CheckCircle2,
+  Search,
+  CalendarDays,
+  X,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OutageCard } from "@/components/outage-card";
+import { isSameDay, addDays, parseISO } from "date-fns";
+
+type DateFilter = "bugun" | "yarin" | null;
 
 export default function Home() {
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [dateFilter, setDateFilter] = useState<DateFilter>(null);
 
   const { data: summary, isLoading: isLoadingSummary } = useGetOutageSummary();
   const { data: districts, isLoading: isLoadingDistricts } = useListDistricts();
-  
-  const queryParams = selectedDistrict && selectedDistrict !== "all" 
-    ? { district: selectedDistrict } 
-    : undefined;
+
+  const queryParams =
+    selectedDistrict && selectedDistrict !== "all"
+      ? { district: selectedDistrict }
+      : undefined;
 
   const { data: outages, isLoading: isLoadingOutages } = useListOutages(
     queryParams,
-    { query: { queryKey: getListOutagesQueryKey(queryParams) } }
+    { query: { queryKey: getListOutagesQueryKey(queryParams) } },
   );
+
+  const filteredOutages = useMemo(() => {
+    if (!outages) return [];
+    let result = outages;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((o) =>
+        o.neighborhoods.some((n) => n.toLowerCase().includes(q)) ||
+        o.reason.toLowerCase().includes(q) ||
+        o.district.toLowerCase().includes(q)
+      );
+    }
+
+    if (dateFilter) {
+      const today = new Date();
+      const targetDate =
+        dateFilter === "bugun" ? today : addDays(today, 1);
+      result = result.filter((o) => {
+        const start = parseISO(o.startTime);
+        const end = parseISO(o.endTime);
+        return isSameDay(start, targetDate) || isSameDay(end, targetDate);
+      });
+    }
+
+    return result;
+  }, [outages, searchQuery, dateFilter]);
+
+  const hasActiveFilters =
+    (selectedDistrict && selectedDistrict !== "all") ||
+    searchQuery.trim() !== "" ||
+    dateFilter !== null;
+
+  function clearAllFilters() {
+    setSelectedDistrict("");
+    setSearchQuery("");
+    setDateFilter(null);
+  }
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-slate-50 dark:bg-background">
@@ -35,7 +92,9 @@ export default function Home() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">İzmir Elektrik</h1>
-            <p className="text-primary-foreground/80 text-sm font-medium">Kesinti Takip Merkezi</p>
+            <p className="text-primary-foreground/80 text-sm font-medium">
+              Kesinti Takip Merkezi
+            </p>
           </div>
         </div>
 
@@ -45,7 +104,9 @@ export default function Home() {
             {isLoadingSummary ? (
               <Skeleton className="h-6 w-10 bg-white/20 mb-1" />
             ) : (
-              <span className="text-xl font-bold text-white">{summary?.totalActive || 0}</span>
+              <span className="text-xl font-bold text-white">
+                {summary?.totalActive || 0}
+              </span>
             )}
             <span className="text-[10px] uppercase tracking-wider font-semibold text-primary-foreground/80 flex items-center gap-1">
               <Zap className="h-3 w-3" /> Aktif
@@ -55,7 +116,9 @@ export default function Home() {
             {isLoadingSummary ? (
               <Skeleton className="h-6 w-10 bg-white/20 mb-1" />
             ) : (
-              <span className="text-xl font-bold text-white">{summary?.totalPlanned || 0}</span>
+              <span className="text-xl font-bold text-white">
+                {summary?.totalPlanned || 0}
+              </span>
             )}
             <span className="text-[10px] uppercase tracking-wider font-semibold text-primary-foreground/80 flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" /> Planlı
@@ -65,7 +128,9 @@ export default function Home() {
             {isLoadingSummary ? (
               <Skeleton className="h-6 w-10 bg-white/20 mb-1" />
             ) : (
-              <span className="text-xl font-bold text-white">{summary?.totalCompleted || 0}</span>
+              <span className="text-xl font-bold text-white">
+                {summary?.totalCompleted || 0}
+              </span>
             )}
             <span className="text-[10px] uppercase tracking-wider font-semibold text-primary-foreground/80 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" /> Biten
@@ -75,36 +140,108 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 py-6 flex flex-col gap-6">
-        
-        {/* Filter */}
+      <main className="flex-1 px-4 py-6 flex flex-col gap-4">
+
+        {/* District Dropdown */}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-muted-foreground px-1">İlçe Seçin</label>
-          <Select 
-            value={selectedDistrict} 
+          <label className="text-sm font-semibold text-muted-foreground px-1">
+            İlçe Seçin
+          </label>
+          <Select
+            value={selectedDistrict}
             onValueChange={setSelectedDistrict}
             disabled={isLoadingDistricts}
           >
-            <SelectTrigger className="w-full bg-white h-12 shadow-sm border-border/50 text-base">
+            <SelectTrigger
+              className="w-full bg-white h-12 shadow-sm border-border/50 text-base"
+              data-testid="select-district"
+            >
               <SelectValue placeholder="Tüm İlçeler" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tüm İlçeler</SelectItem>
               {districts?.map((d) => (
                 <SelectItem key={d.name} value={d.name}>
-                  {d.name} <span className="text-muted-foreground ml-1 text-xs">({d.activeCount + d.plannedCount})</span>
+                  {d.name}{" "}
+                  <span className="text-muted-foreground ml-1 text-xs">
+                    ({d.activeCount + d.plannedCount})
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-muted-foreground pointer-events-none h-[18px] w-[18px]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Mahalle veya sokak ara..."
+            data-testid="input-search"
+            className="w-full h-12 pl-10 pr-10 rounded-lg border border-border/50 bg-white shadow-sm text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              data-testid="button-clear-search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Date Filter Buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setDateFilter(dateFilter === "bugun" ? null : "bugun")}
+            data-testid="button-filter-bugun"
+            className={`flex-1 h-11 rounded-lg border text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+              dateFilter === "bugun"
+                ? "bg-primary text-primary-foreground border-primary shadow-md"
+                : "bg-white text-foreground border-border/50 hover:border-primary/40 hover:bg-primary/5 shadow-sm"
+            }`}
+          >
+            <CalendarDays className="h-4 w-4" />
+            Bugün
+          </button>
+          <button
+            onClick={() => setDateFilter(dateFilter === "yarin" ? null : "yarin")}
+            data-testid="button-filter-yarin"
+            className={`flex-1 h-11 rounded-lg border text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+              dateFilter === "yarin"
+                ? "bg-primary text-primary-foreground border-primary shadow-md"
+                : "bg-white text-foreground border-border/50 hover:border-primary/40 hover:bg-primary/5 shadow-sm"
+            }`}
+          >
+            <CalendarDays className="h-4 w-4" />
+            Yarın
+          </button>
+        </div>
+
+        {/* Active Filters + Clear */}
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            data-testid="button-clear-all-filters"
+            className="self-start flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/8 hover:bg-primary/15 px-3 py-1.5 rounded-full transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+            Filtreleri Temizle
+          </button>
+        )}
+
         {/* List */}
         <div className="flex flex-col gap-4 pb-12">
           <div className="flex items-center justify-between px-1">
             <h2 className="font-semibold text-lg">Güncel Kesintiler</h2>
-            {outages && (
-              <span className="text-sm text-muted-foreground font-medium">{outages.length} Kayıt</span>
+            {!isLoadingOutages && (
+              <span className="text-sm text-muted-foreground font-medium">
+                {filteredOutages.length} Kayıt
+              </span>
             )}
           </div>
 
@@ -112,18 +249,20 @@ export default function Home() {
             Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-40 w-full rounded-xl" />
             ))
-          ) : outages?.length === 0 ? (
+          ) : filteredOutages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-white rounded-xl border border-border/50 border-dashed">
               <div className="bg-primary/5 p-4 rounded-full mb-4">
                 <Search className="h-8 w-8 text-primary/40" />
               </div>
               <h3 className="font-semibold text-lg mb-1">Kayıt Bulunamadı</h3>
               <p className="text-muted-foreground text-sm">
-                Seçili bölge için planlı veya aktif bir elektrik kesintisi bulunmuyor.
+                {searchQuery
+                  ? `"${searchQuery}" için sonuç bulunamadı.`
+                  : "Seçili filtreler için planlı veya aktif bir kesinti bulunmuyor."}
               </p>
             </div>
           ) : (
-            outages?.map((outage) => (
+            filteredOutages.map((outage) => (
               <OutageCard key={outage.id} outage={outage} />
             ))
           )}
