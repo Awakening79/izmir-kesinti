@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OutageCard } from "@/components/outage-card";
+import { EmergencyTips } from "@/components/emergency-tips";
 import { isSameDay, addDays, parseISO } from "date-fns";
 
 type DateFilter = "bugun" | "yarin" | null;
@@ -82,6 +83,11 @@ export default function Home() {
     (selectedDistrict && selectedDistrict !== "all") ||
     searchQuery.trim() !== "" ||
     dateFilter !== null;
+
+  const hasActiveOrPlanned = filteredOutages.some(
+    (o) => o.status === "active" || o.status === "planned",
+  );
+  const isActive = filteredOutages.some((o) => o.status === "active");
 
   function clearAllFilters() {
     setSelectedDistrict("");
@@ -271,6 +277,14 @@ export default function Home() {
               <X className="h-3.5 w-3.5" />
               Filtreleri Temizle
             </button>
+          )}
+
+          {/* Emergency Tips */}
+          {!isLoadingOutages && (
+            <EmergencyTips
+              hasActiveOrPlanned={hasActiveOrPlanned}
+              isActive={isActive}
+            />
           )}
 
           {/* Outage List */}
