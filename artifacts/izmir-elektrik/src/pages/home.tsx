@@ -26,6 +26,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { OutageCard } from "@/components/outage-card";
 import { EmergencyTips } from "@/components/emergency-tips";
+import { AddressCheck } from "@/components/address-check";
 import { isSameDay, addDays, parseISO } from "date-fns";
 
 type DateFilter = "bugun" | "yarin" | null;
@@ -183,6 +184,9 @@ export default function Home() {
       {/* Tab: Liste */}
       {activeTab === "liste" && (
         <main className="flex-1 px-4 py-6 flex flex-col gap-4">
+          {/* Address Check */}
+          <AddressCheck />
+
           {/* District Dropdown */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold text-muted-foreground px-1">
