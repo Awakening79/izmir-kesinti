@@ -38,7 +38,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("liste");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [dateFilter, setDateFilter] = useState<DateFilter>(null);
+  const [dateFilter, setDateFilter] = useState<DateFilter>("bugun");
 
   const { data: summary, isLoading: isLoadingSummary } = useGetOutageSummary();
   const { data: districts, isLoading: isLoadingDistricts } = useListDistricts();

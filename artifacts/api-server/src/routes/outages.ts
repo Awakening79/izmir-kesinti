@@ -17,131 +17,158 @@ interface Outage {
   note: string | null;
 }
 
-const now = new Date();
-
-function hoursFromNow(h: number): string {
-  return new Date(now.getTime() + h * 3600000).toISOString();
+/**
+ * Returns midnight (00:00:00.000) of today in local time as a Date.
+ */
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
-function hoursAgo(h: number): string {
-  return new Date(now.getTime() - h * 3600000).toISOString();
+/**
+ * Returns a Date set to HH:MM on today (offset = 0) or tomorrow (offset = 1).
+ */
+function dayAt(dayOffset: 0 | 1, hour: number, minute = 0): string {
+  const d = startOfToday();
+  d.setDate(d.getDate() + dayOffset);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
 }
 
-const outages: Outage[] = [
-  {
-    id: 1,
-    district: "Bornova",
-    neighborhoods: ["Ege Mahallesi", "Kazımdirik", "Altındağ"],
-    startTime: hoursAgo(1),
-    endTime: hoursFromNow(3),
-    reason: "Şebeke bakım ve onarım çalışmaları",
-    status: "active",
-    affectedCount: 3200,
-    note: "Çalışmalar süresince müşterilerimizden özür dileriz.",
-  },
-  {
-    id: 2,
-    district: "Karşıyaka",
-    neighborhoods: ["Mavişehir", "Bostanlı", "Tersane"],
-    startTime: hoursFromNow(2),
-    endTime: hoursFromNow(6),
-    reason: "Trafo yenileme çalışması",
-    status: "planned",
-    affectedCount: 1800,
-    note: null,
-  },
-  {
-    id: 3,
-    district: "Konak",
-    neighborhoods: ["Alsancak", "Hatay", "Güzelyalı"],
-    startTime: hoursAgo(3),
-    endTime: hoursAgo(1),
-    reason: "Kablo yenileme",
-    status: "completed",
-    affectedCount: 950,
-    note: "Çalışmalar tamamlanmıştır.",
-  },
-  {
-    id: 4,
-    district: "Buca",
-    neighborhoods: ["Adatepe Mahallesi", "Çamlıkule", "Kaynaklar"],
-    startTime: hoursFromNow(5),
-    endTime: hoursFromNow(9),
-    reason: "Hat genişletme çalışması",
-    status: "planned",
-    affectedCount: 2100,
-    note: null,
-  },
-  {
-    id: 5,
-    district: "Bornova",
-    neighborhoods: ["Doğanlar", "Yeşilova", "Işıkkent"],
-    startTime: hoursFromNow(24),
-    endTime: hoursFromNow(28),
-    reason: "Trafo merkezi bakımı",
-    status: "planned",
-    affectedCount: 4500,
-    note: "Planlı bakım çalışması.",
-  },
-  {
-    id: 6,
-    district: "Gaziemir",
-    neighborhoods: ["Aktepe", "Emrez", "Limontepe"],
-    startTime: hoursAgo(2),
-    endTime: hoursFromNow(1),
-    reason: "Arıza giderme ve bakım",
-    status: "active",
-    affectedCount: 700,
-    note: null,
-  },
-  {
-    id: 7,
-    district: "Karşıyaka",
-    neighborhoods: ["Alaybey", "Çiçekli"],
-    startTime: hoursAgo(5),
-    endTime: hoursAgo(3),
-    reason: "Enerji nakil hattı güçlendirme",
-    status: "completed",
-    affectedCount: 600,
-    note: "Çalışmalar planlandığı gibi tamamlanmıştır.",
-  },
-  {
-    id: 8,
-    district: "Balçova",
-    neighborhoods: ["İnciraltı", "Teleferik", "Narlıdere"],
-    startTime: hoursFromNow(10),
-    endTime: hoursFromNow(14),
-    reason: "Yer altı kablo döşeme çalışması",
-    status: "planned",
-    affectedCount: 1350,
-    note: null,
-  },
-  {
-    id: 9,
-    district: "Konak",
-    neighborhoods: ["Basmane", "Çankaya", "Kemeraltı"],
-    startTime: hoursFromNow(30),
-    endTime: hoursFromNow(34),
-    reason: "OG/AG trafo değişimi",
-    status: "planned",
-    affectedCount: 2700,
-    note: null,
-  },
-  {
-    id: 10,
-    district: "Çiğli",
-    neighborhoods: ["Küçükçiğli", "Harmandalı", "Balatçık"],
-    startTime: hoursFromNow(48),
-    endTime: hoursFromNow(52),
-    reason: "Şalt tesisi periyodik bakımı",
-    status: "planned",
-    affectedCount: 3100,
-    note: "Müşterilerimizin mağduriyetini en aza indirmek için çalışmalarımız sürmektedir.",
-  },
-];
+/**
+ * Derives the correct status for an outage based on current real time.
+ * Avoids stale status when the server is long-running.
+ */
+function deriveStatus(startIso: string, endIso: string): OutageStatus {
+  const now = Date.now();
+  const start = new Date(startIso).getTime();
+  const end = new Date(endIso).getTime();
+  if (now < start) return "planned";
+  if (now >= start && now < end) return "active";
+  return "completed";
+}
+
+/**
+ * Generates a fresh outage list on every call, anchored to today/tomorrow
+ * calendar days with fixed clock-time slots. This guarantees the "Bugün"
+ * and "Yarın" date filters always match the correct outages regardless of
+ * what time the server started or how long it has been running.
+ */
+function generateOutages(): Outage[] {
+  const raw: Array<Omit<Outage, "status">> = [
+    // ── TODAY ────────────────────────────────────────────────
+    {
+      id: 1,
+      district: "Bornova",
+      neighborhoods: ["Ege Mahallesi", "Kazımdirik", "Altındağ"],
+      startTime: dayAt(0, 8, 0),
+      endTime: dayAt(0, 12, 0),
+      reason: "Şebeke bakım ve onarım çalışmaları",
+      affectedCount: 3200,
+      note: "Çalışmalar süresince müşterilerimizden özür dileriz.",
+    },
+    {
+      id: 2,
+      district: "Karşıyaka",
+      neighborhoods: ["Mavişehir", "Bostanlı", "Tersane"],
+      startTime: dayAt(0, 10, 0),
+      endTime: dayAt(0, 14, 0),
+      reason: "Trafo yenileme çalışması",
+      affectedCount: 1800,
+      note: null,
+    },
+    {
+      id: 3,
+      district: "Konak",
+      neighborhoods: ["Alsancak", "Hatay", "Güzelyalı"],
+      startTime: dayAt(0, 6, 0),
+      endTime: dayAt(0, 9, 0),
+      reason: "Kablo yenileme",
+      affectedCount: 950,
+      note: "Çalışmalar tamamlanmıştır.",
+    },
+    {
+      id: 4,
+      district: "Gaziemir",
+      neighborhoods: ["Aktepe", "Emrez", "Limontepe"],
+      startTime: dayAt(0, 13, 0),
+      endTime: dayAt(0, 17, 30),
+      reason: "Arıza giderme ve bakım",
+      affectedCount: 700,
+      note: null,
+    },
+    {
+      id: 5,
+      district: "Buca",
+      neighborhoods: ["Adatepe Mahallesi", "Çamlıkule", "Kaynaklar"],
+      startTime: dayAt(0, 15, 0),
+      endTime: dayAt(0, 19, 0),
+      reason: "Hat genişletme çalışması",
+      affectedCount: 2100,
+      note: null,
+    },
+    {
+      id: 6,
+      district: "Konak",
+      neighborhoods: ["Basmane", "Çankaya", "Kemeraltı"],
+      startTime: dayAt(0, 7, 30),
+      endTime: dayAt(0, 11, 30),
+      reason: "OG/AG trafo değişimi",
+      affectedCount: 2700,
+      note: null,
+    },
+    // ── TOMORROW ─────────────────────────────────────────────
+    {
+      id: 7,
+      district: "Bornova",
+      neighborhoods: ["Doğanlar", "Yeşilova", "Işıkkent"],
+      startTime: dayAt(1, 8, 0),
+      endTime: dayAt(1, 13, 0),
+      reason: "Trafo merkezi bakımı",
+      affectedCount: 4500,
+      note: "Planlı bakım çalışması.",
+    },
+    {
+      id: 8,
+      district: "Karşıyaka",
+      neighborhoods: ["Alaybey", "Çiçekli", "Salhane"],
+      startTime: dayAt(1, 9, 0),
+      endTime: dayAt(1, 12, 0),
+      reason: "Enerji nakil hattı güçlendirme",
+      affectedCount: 600,
+      note: null,
+    },
+    {
+      id: 9,
+      district: "Balçova",
+      neighborhoods: ["İnciraltı", "Teleferik", "Narlıdere"],
+      startTime: dayAt(1, 10, 0),
+      endTime: dayAt(1, 15, 0),
+      reason: "Yer altı kablo döşeme çalışması",
+      affectedCount: 1350,
+      note: null,
+    },
+    {
+      id: 10,
+      district: "Çiğli",
+      neighborhoods: ["Küçükçiğli", "Harmandalı", "Balatçık"],
+      startTime: dayAt(1, 13, 0),
+      endTime: dayAt(1, 18, 0),
+      reason: "Şalt tesisi periyodik bakımı",
+      affectedCount: 3100,
+      note: "Müşterilerimizin mağduriyetini en aza indirmek için çalışmalarımız sürmektedir.",
+    },
+  ];
+
+  return raw.map((o) => ({
+    ...o,
+    status: deriveStatus(o.startTime, o.endTime),
+  }));
+}
 
 router.get("/outages", (req: Request, res: Response) => {
-  let result = [...outages];
+  let result = generateOutages();
 
   const { district, status } = req.query;
 
@@ -168,6 +195,8 @@ router.get("/outages", (req: Request, res: Response) => {
 });
 
 router.get("/outages/summary", (_req: Request, res: Response) => {
+  const outages = generateOutages();
+
   const districtMap: Record<
     string,
     { activeCount: number; plannedCount: number; completedCount: number }
@@ -206,7 +235,8 @@ router.get("/outages/summary", (_req: Request, res: Response) => {
 });
 
 router.get("/outages/:id", (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const outages = generateOutages();
+  const id = parseInt(String(req.params.id), 10);
   const outage = outages.find((o) => o.id === id);
   if (!outage) {
     res.status(404).json({ error: "Kesinti bulunamadı" });
@@ -216,6 +246,8 @@ router.get("/outages/:id", (req: Request, res: Response) => {
 });
 
 router.get("/districts", (_req: Request, res: Response) => {
+  const outages = generateOutages();
+
   const districtMap: Record<
     string,
     { activeCount: number; plannedCount: number; completedCount: number }
