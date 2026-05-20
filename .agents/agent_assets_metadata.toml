@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "ZPzEz2nE0ois_h7nSydeN"
+uri = "file://artifacts/izmir-elektrik/BUILD_ANDROID.md"
+type = "text"
+title = "Android Build-Anleitung"

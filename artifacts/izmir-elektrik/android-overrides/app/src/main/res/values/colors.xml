@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android color resources for İzmir Kesinti Takibi.
+  Copy to android/app/src/main/res/values/colors.xml
+-->
+<resources>
+    <color name="ic_launcher_background">#0B4D7A</color>
+    <color name="ic_launcher_foreground">#FFFFFF</color>
+    <color name="colorPrimary">#0B4D7A</color>
+    <color name="colorPrimaryDark">#083A5C</color>
+    <color name="colorAccent">#0EA5E9</color>
+</resources>
