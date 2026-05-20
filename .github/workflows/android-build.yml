@@ -15,28 +15,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Java 17 ───────────────────────────────────────────────────────────
+      # ── 2. Node.js (nur für cap sync benötigt) ───────────────────────────────
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # ── 3. Capacitor-Abhängigkeiten installieren (nur was cap sync braucht) ──
+      - name: Install Capacitor dependencies
+        working-directory: artifacts/izmir-elektrik
+        run: npm install @capacitor/cli @capacitor/android @capacitor/core --legacy-peer-deps
+
+      # ── 4. cap sync android (generiert cordova-plugins & config-Dateien) ─────
+      - name: Capacitor sync
+        working-directory: artifacts/izmir-elektrik
+        run: npx cap sync android
+
+      # ── 5. Java 17 ───────────────────────────────────────────────────────────
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: temurin
 
-      # ── 3. Android SDK ───────────────────────────────────────────────────────
+      # ── 6. Android SDK ───────────────────────────────────────────────────────
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # ── 4. Gradle ausführbar machen ──────────────────────────────────────────
+      # ── 7. Gradle ausführbar machen ──────────────────────────────────────────
       - name: Make gradlew executable
         working-directory: artifacts/izmir-elektrik/android
         run: chmod +x gradlew
 
-      # ── 5. Debug APK bauen ───────────────────────────────────────────────────
+      # ── 8. Debug APK bauen ───────────────────────────────────────────────────
       - name: Build debug APK
         working-directory: artifacts/izmir-elektrik/android
         run: ./gradlew assembleDebug --no-daemon
 
-      # ── 6. APK hochladen ─────────────────────────────────────────────────────
+      # ── 9. APK hochladen ─────────────────────────────────────────────────────
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
