@@ -1,4 +1,5 @@
 name: Build APK
+# Builds the debug APK for izmir-elektrik on every push/PR to main
 
 on:
   push:
