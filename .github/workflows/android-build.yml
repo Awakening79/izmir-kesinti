@@ -3,7 +3,7 @@ name: Android APK Build
 on:
   push:
     branches: [main, master]
-  workflow_dispatch:   # allows manual trigger from the GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   build-apk:
@@ -21,12 +21,11 @@ jobs:
         with:
           node-version: "20"
 
-      # ── 3. pnpm ──────────────────────────────────────────────────────────────
+      # ── 3. pnpm (exakte Version wie in Replit) ───────────────────────────────
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
-          run_install: false
+          version: "10.26.1"
 
       - name: Get pnpm store path
         id: pnpm-cache
@@ -40,7 +39,7 @@ jobs:
           restore-keys: ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       # ── 4. Java 17 ───────────────────────────────────────────────────────────
       - name: Set up JDK 17
@@ -54,11 +53,11 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # ── 6. Build the web app ─────────────────────────────────────────────────
+      # ── 6. Web-App bauen ─────────────────────────────────────────────────────
       - name: Build web app (Vite)
         run: pnpm --filter @workspace/izmir-elektrik run build
 
-      # ── 7. Capacitor: add Android platform (cached) ──────────────────────────
+      # ── 7. Capacitor Android-Platform hinzufügen ─────────────────────────────
       - name: Cache Capacitor Android platform
         id: cap-android-cache
         uses: actions/cache@v4
@@ -71,39 +70,36 @@ jobs:
         working-directory: artifacts/izmir-elektrik
         run: npx cap add android
 
-      # ── 8. Apply Android overrides (fullscreen, portrait, colours) ───────────
+      # ── 8. Android-Overrides anwenden ────────────────────────────────────────
       - name: Apply Android config overrides
         working-directory: artifacts/izmir-elektrik
         run: |
           cp android-overrides/app/src/main/AndroidManifest.xml \
              android/app/src/main/AndroidManifest.xml
-
           cp android-overrides/app/src/main/res/values/styles.xml \
              android/app/src/main/res/values/styles.xml
-
           cp android-overrides/app/src/main/res/values/colors.xml \
              android/app/src/main/res/values/colors.xml
-
           mkdir -p android/app/src/main/res/values-night
           cp android-overrides/app/src/main/res/values-night/styles.xml \
              android/app/src/main/res/values-night/styles.xml
 
-      # ── 9. Sync web assets into Android project ──────────────────────────────
+      # ── 9. Capacitor sync ────────────────────────────────────────────────────
       - name: Capacitor sync
         working-directory: artifacts/izmir-elektrik
         run: npx cap sync android
 
-      # ── 10. Gradle permissions ───────────────────────────────────────────────
+      # ── 10. Gradle ausführbar machen ─────────────────────────────────────────
       - name: Make gradlew executable
         working-directory: artifacts/izmir-elektrik/android
         run: chmod +x gradlew
 
-      # ── 11. Build debug APK ──────────────────────────────────────────────────
+      # ── 11. Debug APK bauen ──────────────────────────────────────────────────
       - name: Build debug APK
         working-directory: artifacts/izmir-elektrik/android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      # ── 12. Upload APK as workflow artifact ──────────────────────────────────
+      # ── 12. APK hochladen ────────────────────────────────────────────────────
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
