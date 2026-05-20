@@ -36,6 +36,9 @@ jobs:
         run: ./gradlew assembleDebug
         working-directory: artifacts/izmir-elektrik/android
 
+      - name: Find APK location
+        run: find /home/runner/work -name "*.apk" 2>/dev/null && echo "---" && find . -name "*.apk" 2>/dev/null
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
