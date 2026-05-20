@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import re
 from urllib.parse import quote
 
 print("=" * 50)
@@ -9,9 +10,13 @@ print()
 print("Bitte gib deine GitHub-Daten ein:")
 print()
 
-username = input("GitHub-Benutzername: ").strip()
-repo     = input("Repository-Name (z.B. izmir-kesinti): ").strip()
-token    = input("Personal Access Token (ghp_...): ").strip()
+def clean(s):
+    # Entfernt alle nicht-druckbaren Zeichen (Steuerzeichen, DEL, etc.)
+    return re.sub(r'[^\x20-\x7e]', '', s).strip()
+
+username = clean(input("GitHub-Benutzername: "))
+repo     = clean(input("Repository-Name (z.B. izmir-kesinti): "))
+token    = clean(input("Personal Access Token (ghp_...): "))
 
 if not username or not repo or not token:
     print("\nFehler: Alle Felder müssen ausgefüllt sein.")
