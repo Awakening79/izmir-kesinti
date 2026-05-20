@@ -1,6 +1,5 @@
 import subprocess
 import sys
-import os
 
 print("=" * 50)
 print("  İzmir Kesinti Takibi — GitHub Push")
@@ -29,27 +28,22 @@ def run(cmd, **kwargs):
     return result
 
 print("\n--- Git-Konfiguration ---")
-
-# Configure git user if not set
 run(["git", "config", "user.email", f"{username}@users.noreply.github.com"])
 run(["git", "config", "user.name", username])
-
-# Remove existing origin if any
 run(["git", "remote", "remove", "origin"])
+run(["git", "remote", "add", "origin", remote_url])
 
-# Add new origin with token
-r = run(["git", "remote", "add", "origin", remote_url])
-
-# Stage all files
 print("\n--- Dateien vorbereiten ---")
 run(["git", "add", "-A"])
-
-# Commit
-r = run(["git", "commit", "-m", "Initial commit — İzmir Kesinti Takibi"])
+r = run(["git", "commit", "-m", "Update: Live-URL + vereinfachter Workflow"])
 if r.returncode != 0 and "nothing to commit" not in (r.stdout + r.stderr):
-    run(["git", "commit", "--allow-empty", "-m", "Initial commit — İzmir Kesinti Takibi"])
+    run(["git", "commit", "--allow-empty", "-m", "Update: Live-URL + vereinfachter Workflow"])
 
-# Push
+print("\n--- Remote-Änderungen holen (pull --rebase) ---")
+r = run(["git", "pull", "--rebase", "origin", "main"])
+if r.returncode != 0:
+    print("Pull fehlgeschlagen — versuche trotzdem zu pushen...")
+
 print("\n--- Push zu GitHub ---")
 r = run(["git", "push", "-u", "origin", "main"])
 
@@ -59,22 +53,18 @@ if r.returncode == 0:
     print("  Erfolgreich hochgeladen!")
     print(f"  https://github.com/{username}/{repo}")
     print(f"  Actions: https://github.com/{username}/{repo}/actions")
-    print("  Der APK-Build startet jetzt automatisch (~8 Min).")
+    print("  Der APK-Build startet jetzt automatisch (~5 Min).")
     print("=" * 50)
 else:
-    # Try 'master' branch as fallback
-    print("\nVersuche Branch 'master'...")
-    r2 = run(["git", "push", "-u", "origin", "master"])
+    print()
+    print("Push fehlgeschlagen. Versuche Force-Push...")
+    r2 = run(["git", "push", "--force-with-lease", "-u", "origin", "main"])
     if r2.returncode == 0:
         print()
         print("=" * 50)
-        print("  Erfolgreich hochgeladen!")
+        print("  Erfolgreich hochgeladen (force)!")
         print(f"  https://github.com/{username}/{repo}/actions")
         print("=" * 50)
     else:
         print()
-        print("Fehler beim Push. Mögliche Ursachen:")
-        print("  1. Das Repository existiert noch nicht auf GitHub.")
-        print(f"     Bitte zuerst erstellen: https://github.com/new")
-        print("  2. Token hat keine 'repo'-Berechtigung.")
-        print("  3. Benutzername oder Token falsch eingegeben.")
+        print("Fehler beim Push. Bitte Token und Repo-Name prüfen.")
