@@ -101,7 +101,12 @@ jobs:
         working-directory: artifacts/izmir-elektrik/android
         run: ./gradlew assembleDebug --no-daemon --info 2>&1 | tail -50
 
-      # ── 12. APK hochladen ────────────────────────────────────────────────────
+      # ── 12. APK-Pfad ermitteln ───────────────────────────────────────────────
+      - name: Find APK location
+        working-directory: artifacts/izmir-elektrik
+        run: find . -name "*.apk" 2>/dev/null
+
+      # ── 13. APK hochladen ────────────────────────────────────────────────────
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
