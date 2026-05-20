@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from urllib.parse import quote
 
 print("=" * 50)
 print("  İzmir Kesinti Takibi — GitHub Push")
@@ -16,7 +17,7 @@ if not username or not repo or not token:
     print("\nFehler: Alle Felder müssen ausgefüllt sein.")
     sys.exit(1)
 
-remote_url = f"https://{username}:{token}@github.com/{username}/{repo}.git"
+remote_url = f"https://{quote(username, safe='')}:{quote(token, safe='')}@github.com/{username}/{repo}.git"
 
 def run(cmd, **kwargs):
     print(f"\n$ {' '.join(cmd)}")
