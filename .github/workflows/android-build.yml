@@ -61,18 +61,8 @@ jobs:
           NODE_ENV: "production"
         run: pnpm run build
 
-      # ── 7. Capacitor Android-Platform hinzufügen ─────────────────────────────
-      - name: Cache Capacitor Android platform
-        id: cap-android-cache
-        uses: actions/cache@v4
-        with:
-          path: artifacts/izmir-elektrik/android
-          key: cap-android-${{ hashFiles('artifacts/izmir-elektrik/capacitor.config.ts') }}
-
-      - name: Add Capacitor Android platform
-        if: steps.cap-android-cache.outputs.cache-hit != 'true'
-        working-directory: artifacts/izmir-elektrik
-        run: npx cap add android
+      # ── 7. Capacitor sync ────────────────────────────────────────────────────
+      # android/ folder is committed — only sync is needed, not cap add
 
       # ── 8. Android-Overrides anwenden ────────────────────────────────────────
       - name: Apply Android config overrides
