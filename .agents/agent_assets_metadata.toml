@@ -6,3 +6,9 @@ id = "ZPzEz2nE0ois_h7nSydeN"
 uri = "file://artifacts/izmir-elektrik/BUILD_ANDROID.md"
 type = "text"
 title = "Android Build-Anleitung"
+
+[[outputs]]
+id = "cKiSa8uD1jZ-WoWSoPqVL"
+uri = "file://.github/GITHUB_ACTIONS_SETUP.md"
+type = "text"
+title = "GitHub Actions Setup-Anleitung"

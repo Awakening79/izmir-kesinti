@@ -1,0 +1,113 @@
+name: Android APK Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:   # allows manual trigger from the GitHub Actions tab
+
+jobs:
+  build-apk:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js ───────────────────────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # ── 3. pnpm ──────────────────────────────────────────────────────────────
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── 4. Java 17 ───────────────────────────────────────────────────────────
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+          cache: gradle
+
+      # ── 5. Android SDK ───────────────────────────────────────────────────────
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # ── 6. Build the web app ─────────────────────────────────────────────────
+      - name: Build web app (Vite)
+        run: pnpm --filter @workspace/izmir-elektrik run build
+
+      # ── 7. Capacitor: add Android platform (cached) ──────────────────────────
+      - name: Cache Capacitor Android platform
+        id: cap-android-cache
+        uses: actions/cache@v4
+        with:
+          path: artifacts/izmir-elektrik/android
+          key: cap-android-${{ hashFiles('artifacts/izmir-elektrik/capacitor.config.ts') }}
+
+      - name: Add Capacitor Android platform
+        if: steps.cap-android-cache.outputs.cache-hit != 'true'
+        working-directory: artifacts/izmir-elektrik
+        run: npx cap add android
+
+      # ── 8. Apply Android overrides (fullscreen, portrait, colours) ───────────
+      - name: Apply Android config overrides
+        working-directory: artifacts/izmir-elektrik
+        run: |
+          cp android-overrides/app/src/main/AndroidManifest.xml \
+             android/app/src/main/AndroidManifest.xml
+
+          cp android-overrides/app/src/main/res/values/styles.xml \
+             android/app/src/main/res/values/styles.xml
+
+          cp android-overrides/app/src/main/res/values/colors.xml \
+             android/app/src/main/res/values/colors.xml
+
+          mkdir -p android/app/src/main/res/values-night
+          cp android-overrides/app/src/main/res/values-night/styles.xml \
+             android/app/src/main/res/values-night/styles.xml
+
+      # ── 9. Sync web assets into Android project ──────────────────────────────
+      - name: Capacitor sync
+        working-directory: artifacts/izmir-elektrik
+        run: npx cap sync android
+
+      # ── 10. Gradle permissions ───────────────────────────────────────────────
+      - name: Make gradlew executable
+        working-directory: artifacts/izmir-elektrik/android
+        run: chmod +x gradlew
+
+      # ── 11. Build debug APK ──────────────────────────────────────────────────
+      - name: Build debug APK
+        working-directory: artifacts/izmir-elektrik/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      # ── 12. Upload APK as workflow artifact ──────────────────────────────────
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: izmir-kesinti-takibi-debug-${{ github.run_number }}
+          path: artifacts/izmir-elektrik/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+          if-no-files-found: error
