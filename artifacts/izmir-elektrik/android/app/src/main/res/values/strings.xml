@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">İzmir Kesinti Takibi</string>
+    <string name="title_activity_main">İzmir Kesinti Takibi</string>
+    <string name="package_name">com.izmir.kesintitakibi</string>
+    <string name="custom_url_scheme">com.izmir.kesintitakibi</string>
+</resources>

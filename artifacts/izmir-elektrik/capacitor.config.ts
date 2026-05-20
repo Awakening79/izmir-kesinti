@@ -19,7 +19,7 @@ const config: CapacitorConfig = {
   appName: "İzmir Kesinti Takibi",
 
   /* Points at the Vite build output — produced by `pnpm run build` */
-  webDir: "dist",
+  webDir: "dist/public",
 
   /*
    * Uncomment to load the live deployed web app instead of a local bundle.
