@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   webDir: "dist/public",
 
   server: {
-    url: "REPLIT_DEPLOY_URL_PLACEHOLDER",
+    url: "https://izmir-power-map.replit.app",
     cleartext: false,
   },
 
