@@ -99,7 +99,9 @@ jobs:
       # ── 11. Debug APK bauen ──────────────────────────────────────────────────
       - name: Build debug APK
         working-directory: artifacts/izmir-elektrik/android
-        run: ./gradlew assembleDebug --no-daemon --info 2>&1 | tail -50
+        run: |
+          ./gradlew assembleDebug --no-daemon --info 2>&1 | tail -50
+          ls -la android/app/build/outputs/apk/debug/ || echo 'APK folder does not exist'
 
       # ── 12. APK-Pfad ermitteln ───────────────────────────────────────────────
       - name: Find APK location
