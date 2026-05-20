@@ -1,46 +1,7 @@
-name: Build APK
-# Builds the debug APK for izmir-elektrik on every push/PR to main
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
+# DEAKTIVIERT — wird durch android-build.yml ersetzt
+on: workflow_dispatch
 jobs:
-  build:
+  disabled:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-        working-directory: artifacts/izmir-elektrik
-
-      - name: Build APK
-        run: ./gradlew assembleDebug
-        working-directory: artifacts/izmir-elektrik/android
-
-      - name: Find APK location
-        run: find /home/runner/work -name "*.apk" 2>/dev/null
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: artifacts/izmir-elektrik/android/app/build/outputs/apk/debug/app-debug.apk
+      - run: echo "Dieser Workflow ist deaktiviert. Bitte android-build.yml verwenden."
