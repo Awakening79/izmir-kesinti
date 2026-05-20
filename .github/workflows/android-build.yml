@@ -32,6 +32,9 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       # ── 4. cap sync android (generiert cordova-plugins & config-Dateien) ─────
+      - name: Create required assets directory
+        run: mkdir -p artifacts/izmir-elektrik/android/app/src/main/assets
+
       - name: Capacitor sync
         working-directory: artifacts/izmir-elektrik
         run: npx cap sync android
