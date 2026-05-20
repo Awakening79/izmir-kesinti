@@ -15,16 +15,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Node.js (nur für cap sync benötigt) ───────────────────────────────
+      # ── 2. Node.js ───────────────────────────────────────────────────────────
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      # ── 3. Capacitor-Abhängigkeiten installieren (nur was cap sync braucht) ──
-      - name: Install Capacitor dependencies
+      # ── 3. pnpm (versteht catalog: URLs — npm tut es nicht) ──────────────────
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.26.1"
+
+      - name: Install dependencies
         working-directory: artifacts/izmir-elektrik
-        run: npm install @capacitor/cli @capacitor/android @capacitor/core --legacy-peer-deps
+        run: pnpm install --no-frozen-lockfile
 
       # ── 4. cap sync android (generiert cordova-plugins & config-Dateien) ─────
       - name: Capacitor sync
